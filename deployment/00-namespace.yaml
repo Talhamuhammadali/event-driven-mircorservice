@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: event-driven-microservice
+  labels:
+    name: event-driven-microservice
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: event-driven-microservice
+data:
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  FEATURE_ID: "default"

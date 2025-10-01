@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: event-driven-microservice
+  labels:
+    app: worker
+spec:
+  replicas: 2  # Start with 2 replicas (HPA will scale this)
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+      - name: worker
+        image: myapp-worker:latest
+        imagePullPolicy: Never  # Use local image built with minikube
+        env:
+        - name: FEATURE_ID
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: FEATURE_ID
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: REDIS_PORT
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"  # Low request to trigger autoscaling easily
+          limits:
+            memory: "256Mi"
+            cpu: "200m"  # Low limit to trigger autoscaling under load
