@@ -23,16 +23,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY app/ .
 
 # Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app && \
-    chown -R app:app /app
-USER app
+RUN useradd --create-home --shell /bin/bash worker && \
+    chown -R worker:worker /app
+USER worker
 
-# Expose port
-EXPOSE 8000
-
-# Health check
+# Health check (check if worker process is running)
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD pgrep -f "arq worker" || exit 1
 
-# Run the application
-CMD ["python", "main.py"]
+# Run the ARQ worker
+CMD ["arq", "worker.WorkerSettings"]

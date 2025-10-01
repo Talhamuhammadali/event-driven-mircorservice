@@ -1,0 +1,73 @@
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    container_name: redis-stack
+    ports:
+      - "6379:6379"   # Redis
+      - "8001:8001"   # RedisInsight
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+
+  api:
+    image: myapp-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - FEATURE_ID=default
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/heath"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  worker:
+    image: myapp-worker:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - FEATURE_ID=worker-default
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      placement:
+        max_replicas_per_node: 5
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: overlay
